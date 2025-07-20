@@ -23,6 +23,18 @@ function decodeBencode(bencodedValue, startIndex = 0) {
 		const endIndex = bencodedValue.indexOf("e", startIndex);
 		const integer = parseInt(bencodedValue.slice(startIndex + 1, endIndex));
 		return [integer, endIndex + 1];
+	} else if (firstCharacter === "l") {
+		// list
+		// format: l<value>e
+		const array = [];
+		let index = startIndex + 1;
+		while (bencodedValue[index] != "e") {
+			const [value, nextIndex] = decodeBencode(bencodedValue, index);
+			array.push(value);
+			index = nextIndex;
+		}
+
+		return [array, index + 1];
 	} else {
 		throw new Error(`Invalid bencoded value: ${bencodedValue}`);
 	}
