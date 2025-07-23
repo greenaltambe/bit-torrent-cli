@@ -33,8 +33,19 @@ function decodeBencode(bencodedValue, startIndex = 0) {
 			array.push(value);
 			index = nextIndex;
 		}
-
 		return [array, index + 1];
+	} else if (firstCharacter === "d") {
+		// dictionary
+		// format: d<key>valuee
+		const dictionary = {};
+		let index = startIndex + 1;
+		while (bencodedValue[index] != "e") {
+			const [key, nextIndex] = decodeBencode(bencodedValue, index);
+			const [value, nextIndex2] = decodeBencode(bencodedValue, nextIndex);
+			dictionary[key] = value;
+			index = nextIndex2;
+		}
+		return [dictionary, index + 1];
 	} else {
 		throw new Error(`Invalid bencoded value: ${bencodedValue}`);
 	}
