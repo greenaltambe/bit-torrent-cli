@@ -1,4 +1,5 @@
 import process from "process";
+import fs from "fs";
 
 function decodeBencode(bencodedValue, startIndex = 0) {
 	const firstCharacter = bencodedValue[startIndex];
@@ -51,6 +52,12 @@ function decodeBencode(bencodedValue, startIndex = 0) {
 	}
 }
 
+function parseTorrentFile(torrentFile) {
+	const info = fs.readFileSync(torrentFile, "utf-8");
+	const [decodedInfo] = decodeBencode(info);
+	return decodedInfo;
+}
+
 function main() {
 	const command = process.argv[2];
 
@@ -60,6 +67,11 @@ function main() {
 		const bencodedValue = process.argv[3];
 		const [decodedValue] = decodeBencode(bencodedValue);
 		console.log(JSON.stringify(decodedValue));
+	} else if (command === "info") {
+		const torrentFile = process.argv[3];
+		const info = parseTorrentFile(torrentFile);
+		console.log(JSON.stringify(`Tracker URL: ${info["announce"]}`));
+		console.log(JSON.stringify(`Length: ${info["info"]["length"]}`));
 	} else {
 		throw new Error(`Unknown command: ${command}`);
 	}
