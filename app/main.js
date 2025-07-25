@@ -86,6 +86,17 @@ function calculateInfoHash(info) {
 	return hash.digest("hex");
 }
 
+function getPiecesFromInfo(info) {
+	const pieces = info["pieces"];
+	const piecesBuffer = Buffer.from(pieces, "binary");
+	const piecesArray = [];
+	for (let i = 0; i < piecesBuffer.length; i += 20) {
+		piecesArray.push(piecesBuffer.slice(i, i + 20).toString("hex"));
+	}
+
+	return piecesArray;
+}
+
 function parseTorrentFile(torrentFile) {
 	const buffer = fs.readFileSync(torrentFile); // Buffer
 	const [data] = decodeBencode(buffer.toString("binary")); // binary to string of bencode => decoe bencode
@@ -107,9 +118,15 @@ function main() {
 		const torrentFile = process.argv[3];
 		const [announce, info] = parseTorrentFile(torrentFile);
 		const infoHash = calculateInfoHash(info);
+		const pieces = getPiecesFromInfo(info);
 		console.log("Tracker URL:", announce);
 		console.log("Info:", info);
 		console.log("Info hash:", infoHash);
+		console.log("Piece Length:", info["piece length"]);
+		console.log("Pieces Hashes:");
+		for (const pieceHash of pieces) {
+			console.log(pieceHash.toString("hex"));
+		}
 	} else {
 		throw new Error(`Unknown command: ${command}`);
 	}
