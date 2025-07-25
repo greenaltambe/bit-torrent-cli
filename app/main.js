@@ -1,5 +1,6 @@
 import process from "process";
 import fs from "fs";
+import crypto from "crypto";
 
 function decodeBencode(bencodedValue, startIndex = 0) {
 	const firstCharacter = bencodedValue[startIndex];
@@ -52,6 +53,39 @@ function decodeBencode(bencodedValue, startIndex = 0) {
 	}
 }
 
+function encodeBencode(value) {
+	if (typeof value === "string") {
+		return `${value.length}:${value}`;
+	} else if (typeof value === "number") {
+		return `i${value}e`;
+	} else if (Array.isArray(value)) {
+		let res = "l";
+		for (const item of value) {
+			res += encodeBencode(item);
+		}
+		res += "e";
+		return res;
+	} else if (typeof value === "object") {
+		let res = "d";
+		const sortedKeys = Object.keys(value).sort();
+		for (const key of sortedKeys) {
+			res += encodeBencode(key);
+			res += encodeBencode(value[key]);
+		}
+		res += "e";
+		return res;
+	} else {
+		throw new Error(`Invalid value: ${value}`);
+	}
+}
+
+function calculateInfoHash(info) {
+	const infoBuffer = encodeBencode(info);
+	const hash = crypto.createHash("sha1");
+	hash.update(infoBuffer, "binary");
+	return hash.digest("hex");
+}
+
 function parseTorrentFile(torrentFile) {
 	const buffer = fs.readFileSync(torrentFile); // Buffer
 	const [data] = decodeBencode(buffer.toString("binary")); // binary to string of bencode => decoe bencode
@@ -72,8 +106,10 @@ function main() {
 	} else if (command === "info") {
 		const torrentFile = process.argv[3];
 		const [announce, info] = parseTorrentFile(torrentFile);
+		const infoHash = calculateInfoHash(info);
 		console.log("Tracker URL:", announce);
 		console.log("Info:", info);
+		console.log("Info hash:", infoHash);
 	} else {
 		throw new Error(`Unknown command: ${command}`);
 	}
